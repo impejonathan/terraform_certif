@@ -28,9 +28,10 @@ resource "azurerm_storage_account" "datalake" {
   location                          = var.location
   account_tier                      = "Standard"
   account_replication_type          = "LRS"
-  is_hns_enabled                    = true # Data Lake Gen2 activé
+  is_hns_enabled                    = true
 }
 
+# Création des Containers (Blobs) pour le Data Lake
 resource "azurerm_storage_container" "bronze-data" {
   name                  = "bronze-data"
   count                 = length(data.azurerm_storage_account.existing_sa.id) > 0 ? 1 : 0
