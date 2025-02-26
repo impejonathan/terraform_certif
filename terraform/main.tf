@@ -18,14 +18,14 @@ resource "azurerm_resource_group" "rg" {
 # Référence au Resource Group (qu'il soit existant ou créé)
 locals {
   resource_group_name = try(data.azurerm_resource_group.rg.name, try(azurerm_resource_group.rg[0].name, var.resource_group_name))
-  location = try(data.azurerm_resource_group.rg.location, try(azurerm_resource_group.rg[0].location, var.location))
+  location            = try(data.azurerm_resource_group.rg.location, try(azurerm_resource_group.rg[0].location, var.location))
 }
 
 # Data source pour vérifier l'existence du Storage Account
 data "azurerm_storage_account" "datalake" {
   name                = var.storage_account_name
   resource_group_name = local.resource_group_name
-  depends_on = [azurerm_resource_group.rg]
+  depends_on          = [azurerm_resource_group.rg]
 }
 
 # Création du Storage Account seulement s'il n'existe pas
