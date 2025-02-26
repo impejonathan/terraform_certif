@@ -31,21 +31,23 @@ resource "azurerm_storage_account" "datalake" {
   is_hns_enabled                    = true # Data Lake Gen2 activé
 }
 
-# Création des Containers (Blobs) pour le Data Lake
 resource "azurerm_storage_container" "bronze-data" {
   name                  = "bronze-data"
-  storage_account_id    = azurerm_storage_account.datalake[0].id
+  count                 = length(data.azurerm_storage_account.existing_sa.id) > 0 ? 1 : 0
+  storage_account_id    = data.azurerm_storage_account.existing_sa.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "data-gouv" {
   name                  = "data-gouv"
-  storage_account_id    = azurerm_storage_account.datalake[0].id
+  count                 = length(data.azurerm_storage_account.existing_sa.id) > 0 ? 1 : 0
+  storage_account_id    = data.azurerm_storage_account.existing_sa.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "gold-data" {
   name                  = "gold-data"
-  storage_account_id    = azurerm_storage_account.datalake[0].id
+  count                 = length(data.azurerm_storage_account.existing_sa.id) > 0 ? 1 : 0
+  storage_account_id    = data.azurerm_storage_account.existing_sa.id
   container_access_type = "private"
 }
