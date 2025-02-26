@@ -1,4 +1,4 @@
-terraform.tfvars
+terraform copy.tfvars
 setup-azure-sp.ps1
 *.png
 note.txt
