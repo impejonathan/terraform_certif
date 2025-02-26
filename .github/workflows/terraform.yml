@@ -21,7 +21,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./prod/terraform
+        working-directory: ./terraform
 
     steps:
       - name: 🛎 Checkout Repository
