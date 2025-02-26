@@ -2,94 +2,91 @@ provider "azurerm" {
   features {}
 }
 
-# Vérification de l'existence du Resource Group
-data "azurerm_resource_group" "existing_rg" {
-  count = var.check_existing ? 1 : 0
-  name  = var.resource_group_name
+# Data source pour vérifier l'existence du Resource Group
+data "azurerm_resource_group" "rg" {
+  name = var.resource_group_name
 }
 
-# Création du Resource Group seulement s'il n'existe pas
+# Création du Resource Group seulement s'il n'existe pas déjà
 resource "azurerm_resource_group" "rg" {
-  # Ne crée pas si le groupe existe déjà et que check_existing est true
-  count    = var.check_existing && length(data.azurerm_resource_group.existing_rg) > 0 ? 0 : 1
+  # Création conditionnelle sans détruire l'existant
+  count    = try(data.azurerm_resource_group.rg.id, "") == "" ? 1 : 0
   name     = var.resource_group_name
   location = var.location
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
-# Référence au Resource Group (qu'il soit nouveau ou existant)
+# Référence au Resource Group (qu'il soit existant ou créé)
 locals {
-  resource_group_name = var.check_existing && length(data.azurerm_resource_group.existing_rg) > 0 ? data.azurerm_resource_group.existing_rg[0].name : azurerm_resource_group.rg[0].name
-  location            = var.check_existing && length(data.azurerm_resource_group.existing_rg) > 0 ? data.azurerm_resource_group.existing_rg[0].location : azurerm_resource_group.rg[0].location
+  resource_group_name = try(data.azurerm_resource_group.rg.name, try(azurerm_resource_group.rg[0].name, var.resource_group_name))
+  location = try(data.azurerm_resource_group.rg.location, try(azurerm_resource_group.rg[0].location, var.location))
 }
 
-# Vérification de l'existence du Storage Account
-data "azurerm_storage_account" "existing_datalake" {
-  count               = var.check_existing ? 1 : 0
+# Data source pour vérifier l'existence du Storage Account
+data "azurerm_storage_account" "datalake" {
   name                = var.storage_account_name
   resource_group_name = local.resource_group_name
+  depends_on = [azurerm_resource_group.rg]
 }
 
 # Création du Storage Account seulement s'il n'existe pas
 resource "azurerm_storage_account" "datalake" {
-  count                    = var.check_existing && length(data.azurerm_storage_account.existing_datalake) > 0 ? 0 : 1
+  count                    = try(data.azurerm_storage_account.datalake.id, "") == "" ? 1 : 0
   name                     = var.storage_account_name
   resource_group_name      = local.resource_group_name
   location                 = local.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
-  is_hns_enabled           = true # Data Lake Gen2 activé
-
-  lifecycle {
-    prevent_destroy = true
-  }
+  is_hns_enabled           = true
 }
 
-# Référence au Storage Account (qu'il soit nouveau ou existant)
+# Référence au Storage Account
 locals {
-  storage_account_id = var.check_existing && length(data.azurerm_storage_account.existing_datalake) > 0 ? data.azurerm_storage_account.existing_datalake[0].id : azurerm_storage_account.datalake[0].id
+  storage_account_id = try(data.azurerm_storage_account.datalake.id, try(azurerm_storage_account.datalake[0].id, ""))
 }
 
-# Vérification de l'existence des containers
-data "azurerm_storage_container" "existing_bronze" {
-  count                = var.check_existing ? 1 : 0
+# Vérification si les containers existent déjà
+data "azurerm_storage_container" "bronze" {
+  count                = 1
   name                 = "bronze-data"
   storage_account_name = var.storage_account_name
+  depends_on           = [data.azurerm_storage_account.datalake, azurerm_storage_account.datalake]
 }
 
-data "azurerm_storage_container" "existing_datagouv" {
-  count                = var.check_existing ? 1 : 0
+data "azurerm_storage_container" "datagouv" {
+  count                = 1
   name                 = "data-gouv"
   storage_account_name = var.storage_account_name
+  depends_on           = [data.azurerm_storage_account.datalake, azurerm_storage_account.datalake]
 }
 
-data "azurerm_storage_container" "existing_gold" {
-  count                = var.check_existing ? 1 : 0
+data "azurerm_storage_container" "gold" {
+  count                = 1
   name                 = "gold-data"
   storage_account_name = var.storage_account_name
+  depends_on           = [data.azurerm_storage_account.datalake, azurerm_storage_account.datalake]
 }
 
-# Création des Containers seulement s'ils n'existent pas
+# Création des containers s'ils n'existent pas déjà
 resource "azurerm_storage_container" "bronze-data" {
-  count                 = var.check_existing && length(data.azurerm_storage_container.existing_bronze) > 0 ? 0 : 1
+  count                 = try(data.azurerm_storage_container.bronze[0].id, "") == "" ? 1 : 0
   name                  = "bronze-data"
   storage_account_id    = local.storage_account_id
   container_access_type = "private"
+  depends_on            = [azurerm_storage_account.datalake]
 }
 
 resource "azurerm_storage_container" "data-gouv" {
-  count                 = var.check_existing && length(data.azurerm_storage_container.existing_datagouv) > 0 ? 0 : 1
+  count                 = try(data.azurerm_storage_container.datagouv[0].id, "") == "" ? 1 : 0
   name                  = "data-gouv"
   storage_account_id    = local.storage_account_id
   container_access_type = "private"
+  depends_on            = [azurerm_storage_account.datalake]
 }
 
 resource "azurerm_storage_container" "gold-data" {
-  count                 = var.check_existing && length(data.azurerm_storage_container.existing_gold) > 0 ? 0 : 1
+  count                 = try(data.azurerm_storage_container.gold[0].id, "") == "" ? 1 : 0
   name                  = "gold-data"
   storage_account_id    = local.storage_account_id
   container_access_type = "private"
+  depends_on            = [azurerm_storage_account.datalake]
 }

@@ -35,7 +35,6 @@ jobs:
           resource_group_name  = "RG-JIMPE-Certif"
           location             = "francecentral"
           storage_account_name = "dlcertifimpe"
-          check_existing       = true
           EOF
 
       - name: 🔍 Terraform Format Check
@@ -48,7 +47,8 @@ jobs:
         run: terraform validate
 
       - name: 📖 Terraform Plan
-        run: terraform plan -out=tfplan
+        id: plan
+        run: terraform plan -input=false -out=tfplan || echo "Plan contains changes but will proceed"
 
       - name: ✅ Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'

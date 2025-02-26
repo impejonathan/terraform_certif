@@ -15,9 +15,3 @@ variable "storage_account_name" {
   type        = string
   default     = "dlcertifimpe"
 }
-
-variable "check_existing" {
-  description = "Vérifier si les ressources existent déjà avant de les créer"
-  type        = bool
-  default     = true
-}
