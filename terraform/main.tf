@@ -17,7 +17,7 @@ resource "azurerm_resource_group" "rg" {
 
 # Référence au Resource Group (existant ou nouvellement créé)
 locals {
-  resource_group_name = var.check_existing && length(data.azurerm_resource_group.existing_rg) > 0 ? data.azurerm_resource_group.existing_rg[0].name : try(azurerm_resource_group.rg[0].name, var.resource_group_name)
+  resource_group_name     = var.check_existing && length(data.azurerm_resource_group.existing_rg) > 0 ? data.azurerm_resource_group.existing_rg[0].name : try(azurerm_resource_group.rg[0].name, var.resource_group_name)
   resource_group_location = var.check_existing && length(data.azurerm_resource_group.existing_rg) > 0 ? data.azurerm_resource_group.existing_rg[0].location : try(azurerm_resource_group.rg[0].location, var.location)
 }
 
