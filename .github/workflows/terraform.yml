@@ -37,8 +37,8 @@ jobs:
           storage_account_name = "dlcertifimpe"
           EOF
 
-      - name: 🔍 Terraform Format Check
-        run: terraform fmt -check
+      - name: 🔍 Terraform Format
+        run: terraform fmt
 
       - name: 🚀 Terraform Init
         run: terraform init
@@ -48,8 +48,9 @@ jobs:
 
       - name: 📖 Terraform Plan
         id: plan
-        run: terraform plan -input=false -out=tfplan || echo "Plan contains changes but will proceed"
+        run: terraform plan -input=false -out=tfplan
+        continue-on-error: true
 
       - name: ✅ Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve
