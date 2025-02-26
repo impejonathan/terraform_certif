@@ -7,21 +7,14 @@ data "azurerm_resource_group" "rg" {
   name = var.resource_group_name
 }
 
-# Création du Resource Group seulement s'il n'existe pas déjà
-resource "azurerm_resource_group" "rg" {
-  count    = data.azurerm_resource_group.rg.id == null ? 1 : 0
-  name     = var.resource_group_name
-  location = var.location
-}
-
-# Référence au Resource Group
+# Pas besoin de créer le Resource Group, nous utilisons l'existant
+# Référence au Resource Group existant
 locals {
-  resource_group_id   = coalesce(try(data.azurerm_resource_group.rg.id, null), try(azurerm_resource_group.rg[0].id, null))
-  resource_group_name = var.resource_group_name
-  location            = var.location
+  resource_group_name = data.azurerm_resource_group.rg.name
+  location            = data.azurerm_resource_group.rg.location
 }
 
-# Création du Storage Account - sans vérification conditionnelle
+# Création du Storage Account avec lifecycle protection
 resource "azurerm_storage_account" "datalake" {
   name                     = var.storage_account_name
   resource_group_name      = local.resource_group_name
@@ -30,23 +23,17 @@ resource "azurerm_storage_account" "datalake" {
   account_replication_type = "LRS"
   is_hns_enabled           = true
 
-  # Utiliser cette ligne si vous voulez empêcher la destruction
   lifecycle {
     prevent_destroy = true
-    # Cette option ignore les changements sur ces attributs
-    ignore_changes = [
-      tags,
-    ]
   }
 }
 
-# Création des containers de stockage
+# Création des containers
 resource "azurerm_storage_container" "bronze-data" {
   name                  = "bronze-data"
   storage_account_id    = azurerm_storage_account.datalake.id
   container_access_type = "private"
 
-  # Empêcher la destruction
   lifecycle {
     prevent_destroy = true
   }
